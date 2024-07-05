@@ -7,6 +7,9 @@ canvas.height = window.innerHeight;
 
 const colors = ['#FF1461', '#18FF92', '#5A87FF', '#FBF38C'];
 
+let explosionSound;
+let fireworkSound;
+
 // Function to clear the canvas
 function clearCanvas() {
     ctx.globalCompositeOperation = 'destination-out';
@@ -31,9 +34,12 @@ class Firework {
         while (this.coordinateCount--) {
             this.coordinates.push([x, y]);
         }
-        this.launchSound = new Audio('launch.mp3');
-        this.explosionSound = new Audio('explosion.mp3');
-        this.launchSound.play();
+
+        // Play firework sound when the firework is launched
+        if (fireworkSound) {
+            fireworkSound.currentTime = 0; // Reset sound
+            fireworkSound.play();
+        }
     }
 
     update() {
@@ -88,60 +94,72 @@ class Particle {
 let fireworks = [];
 let particles = [];
 let lastFireworkTime = 0;
-let isStarted = false;
 
-// Event listener for mouse click to spawn a firework
-canvas.addEventListener('click', (e) => {
-    if (!isStarted) {
-        isStarted = true;
-        animate();
-        if (clickPromptVisible) {
-            clickPromptVisible = false;
-            document.getElementById('clickPrompt').style.display = 'none';
+// Function to start the fireworks simulation
+function startFireworks() {
+    fireworks = [];
+    particles = [];
+    lastFireworkTime = 0;
+
+    // Load sound files
+    explosionSound = new Audio('explosion.mp3');
+    fireworkSound = new Audio('firework.mp3'); // Make sure you have a firework sound file
+
+    function animate(time) {
+        requestAnimationFrame(animate);
+        clearCanvas();
+
+        if (time - lastFireworkTime > 500) {
+            fireworks.push(new Firework(
+                Math.random() * canvas.width,
+                canvas.height,
+                Math.random() * canvas.width,
+                Math.random() * canvas.height / 2,
+                colors[Math.floor(Math.random() * colors.length)]
+            ));
+            lastFireworkTime = time;
         }
+
+        fireworks.forEach((firework, index) => {
+            firework.draw();
+            if (firework.update()) {
+                fireworks.splice(index, 1);
+                for (let i = 0; i < 30; i++) {
+                    particles.push(new Particle(firework.x, firework.y, firework.color));
+                }
+                // Play explosion sound when the firework explodes
+                explosionSound.currentTime = 0; // Reset sound
+                explosionSound.play();
+            }
+        });
+
+        particles.forEach((particle, index) => {
+            particle.draw();
+            if (particle.update()) {
+                particles.splice(index, 1);
+            }
+        });
     }
-    fireworks.push(new Firework(
-        e.clientX,
-        canvas.height,
-        e.clientX,
-        e.clientY,
-        colors[Math.floor(Math.random() * colors.length)]
-    ));
-});
 
-function animate(time) {
-    requestAnimationFrame(animate);
-    clearCanvas();
+    animate();
+}
 
-    if (time - lastFireworkTime > 500) {
+// Event listener for mouse click to spawn a firework and start the simulation
+canvas.addEventListener('click', (e) => {
+    if (clickPromptVisible) {
+        clickPromptVisible = false;
+        document.getElementById('clickPrompt').style.display = 'none';
+        startFireworks();
+    } else {
         fireworks.push(new Firework(
-            Math.random() * canvas.width,
+            e.clientX,
             canvas.height,
-            Math.random() * canvas.width,
-            Math.random() * canvas.height / 2,
+            e.clientX,
+            e.clientY,
             colors[Math.floor(Math.random() * colors.length)]
         ));
-        lastFireworkTime = time;
     }
-
-    fireworks.forEach((firework, index) => {
-        firework.draw();
-        if (firework.update()) {
-            fireworks.splice(index, 1);
-            firework.explosionSound.play();
-            for (let i = 0; i < 30; i++) {
-                particles.push(new Particle(firework.x, firework.y, firework.color));
-            }
-        }
-    });
-
-    particles.forEach((particle, index) => {
-        particle.draw();
-        if (particle.update()) {
-            particles.splice(index, 1);
-        }
-    });
-}
+});
 
 // Function to show initial click prompt
 function showClickPrompt() {
@@ -164,5 +182,3 @@ function showClickPrompt() {
 }
 
 showClickPrompt();
-
-
