@@ -1,10 +1,19 @@
 const canvas = document.getElementById('fireworksCanvas');
 const ctx = canvas.getContext('2d');
+let clickPromptVisible = true;
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 const colors = ['#FF1461', '#18FF92', '#5A87FF', '#FBF38C'];
+
+// Function to clear the canvas
+function clearCanvas() {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.globalCompositeOperation = 'lighter';
+}
 
 class Firework {
     constructor(x, y, targetX, targetY, color) {
@@ -77,12 +86,24 @@ let fireworks = [];
 let particles = [];
 let lastFireworkTime = 0;
 
+// Event listener for mouse click to spawn a firework
+canvas.addEventListener('click', (e) => {
+    if (clickPromptVisible) {
+        clickPromptVisible = false;
+        document.getElementById('clickPrompt').style.display = 'none';
+    }
+    fireworks.push(new Firework(
+        e.clientX,
+        canvas.height,
+        e.clientX,
+        e.clientY,
+        colors[Math.floor(Math.random() * colors.length)]
+    ));
+});
+
 function animate(time) {
     requestAnimationFrame(animate);
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.globalCompositeOperation = 'lighter';
+    clearCanvas();
 
     if (time - lastFireworkTime > 500) {
         fireworks.push(new Firework(
@@ -114,4 +135,27 @@ function animate(time) {
 }
 
 animate();
+
+// Function to show initial click prompt
+function showClickPrompt() {
+    const promptElement = document.createElement('div');
+    promptElement.id = 'clickPrompt';
+    promptElement.textContent = 'Click to Start!';
+    promptElement.style.position = 'absolute';
+    promptElement.style.top = '20px';
+    promptElement.style.left = '50%';
+    promptElement.style.transform = 'translateX(-50%)';
+    promptElement.style.color = 'white';
+    promptElement.style.fontFamily = 'Arial, sans-serif';
+    promptElement.style.fontSize = '20px';
+    promptElement.style.textAlign = 'center';
+    promptElement.style.padding = '10px 20px';
+    promptElement.style.background = 'rgba(0, 0, 0, 0.5)';
+    promptElement.style.borderRadius = '5px';
+    promptElement.style.zIndex = '1000';
+    document.body.appendChild(promptElement);
+}
+
+showClickPrompt();
+
 
